@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration debug="false">
+    <property name="layout" value="[%d{yyyy-MM-dd HH:mm:ss.SSS}] %level [%thread] %logger{36} - %msg%n"/>
+    <property name="maxHistory" value="7"/>
+    <property name="maxFileSize" value="50MB"/>
+
+    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <charset>UTF-8</charset>
+            <layout class="ch.qos.logback.classic.PatternLayout">
+                <Pattern>${layout}</Pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <appender name="toLogFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>/opt/ups/logs/server.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/opt/ups/logs/server.log.%d{yyyy-MM-dd}.%i</fileNamePattern>
+            <maxHistory>${maxHistory}</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <charset>UTF-8</charset>
+            <layout class="ch.qos.logback.classic.PatternLayout">
+                <Pattern>${layout}</Pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <appender name="graylog" class="de.siegmar.logbackgelf.GelfUdpAppender">
+        <graylogHost>192.168.16.201</graylogHost>
+        <graylogPort>12204</graylogPort>
+    </appender>
+
+    <appender name="graylogSync" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="graylog"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="toLogFile"/>
+        <appender-ref ref="consoleAppender"/>
+        <appender-ref ref="graylogSync"/>
+    </root>
+
+</configuration>
