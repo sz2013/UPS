@@ -8,8 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.concurrent.RejectedExecutionException;
 
 @Service
@@ -37,56 +38,47 @@ public class UpsService {
     private ThreadPoolTaskExecutor threadPoolUpsExecutor;
 
     public void OnlineStatusChecker() {
-
         try {
             threadPoolUpsExecutor.submit(() -> {
-                try {
-                    int notOnLineCount = 0;
-                    while (true) {
-
+                int notOnLineCount = 0;
+                while (true) {
+                    long start = System.currentTimeMillis();
+                    try {
                         if (stop) {
                             logger.info("检查在线状态停止");
                             return;
                         }
 
-                        long start = System.currentTimeMillis();
-                        InetAddress inetAddress = InetAddress.getByName(ip);
-                        // 5000毫秒内尝试连接目标主机
-                        boolean isOnline = inetAddress.isReachable(5000);
+                        Socket socket = new Socket();
+                        socket.connect(new InetSocketAddress(ip, 3389), 3000);
+                        socket.close();
 
-                        if (isOnline) {
-                            if (log) {
-                                logger.info("检查状态完成ip={}在线,耗时={}", ip, System.currentTimeMillis() - start);
-                            }
-                            if (notOnLineCount > 0) {
-                                MailUtil.sendEmail("来电了", "ip=" + ip + "重新上线，请检查服务器状态");
-                                notOnLineCount = 0;
-                            }
-                        } else {
-                            logger.info("检查状态完成ip={}不在线,耗时={}", ip, System.currentTimeMillis() - start);
-                            MailUtil.sendEmail("可能停电了", "ip=" + ip + "不在线了，可能停电了，请及时关闭服务器");
-                            notOnLineCount++;
-
-                            //如果下线超过等待时间
-                            if (notOnLineCount > waitTime * 60 / interval) {
-                                MailUtil.sendEmail("停电很久了", "ip=" + ip + "不在线已经超过" + waitTime + "分钟，可能停电了，ups电量即将耗尽，请及时关闭服务器");
-                                return;
-                            }
+                        if (log) {
+                            logger.info("检查状态完成ip={}在线,耗时={}", ip, System.currentTimeMillis() - start);
                         }
+                        if (notOnLineCount > 0) {
+                            MailUtil.sendEmail("来电了", "ip=" + ip + "重新上线，请检查服务器状态");
+                            notOnLineCount = 0;
+                        }
+                    } catch (IOException e) {
+                        logger.info("检查状态完成ip={}不在线,耗时={}", ip, System.currentTimeMillis() - start);
+                        MailUtil.sendEmail("可能停电了", "ip=" + ip + "不在线了，可能停电了，请及时关闭服务器");
+                        notOnLineCount++;
 
-                        if (interval > 0) {
-                            try {
-                                Thread.sleep(interval * 1000);
-                            } catch (InterruptedException e) {
-                                logger.error("线程休眠失败", e);
-                            }
+                        //如果下线超过等待时间
+                        if (notOnLineCount > waitTime * 60 / interval) {
+                            MailUtil.sendEmail("停电很久了", "ip=" + ip + "不在线已经超过" + waitTime + "分钟，可能停电了，ups电量即将耗尽，请及时关闭服务器");
+                            return;
                         }
                     }
-                } catch (UnknownHostException e) {
-                    logger.info("未知IP：" + ip);
-                } catch (Exception e) {
-                    logger.error("获取ups在线状态出错", e);
-                    MailUtil.sendEmail("获取ups在线状态出错", "获取ups在线状态出错，请检查服务器状态");
+
+                    if (interval > 0) {
+                        try {
+                            Thread.sleep(interval * 1000);
+                        } catch (InterruptedException e) {
+                            logger.error("线程休眠失败", e);
+                        }
+                    }
                 }
             });
         } catch (RejectedExecutionException e) {
