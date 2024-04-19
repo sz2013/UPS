@@ -3,8 +3,6 @@ package com.zjf.ups.common;
 public enum ExceptionEnum {
 
     THROWABLE_ERROR(10000, "未知错误"),
-    REDIS_ERROR(10004, "Redis错误"),
-    REDIS_LOCK_ERROR(10005, "Redis获取锁错误")
     ;
 
 
