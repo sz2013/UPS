@@ -17,7 +17,7 @@ class UpsApplicationTests {
 
     @Test
     void testOnlineStatusChecker() {
-        upsService.OnlineStatusChecker();
+        upsService.onlineStatusChecker();
     }
 
 }

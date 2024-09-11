@@ -9,8 +9,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.net.InetAddress;
 import java.util.concurrent.RejectedExecutionException;
 
 @Service
@@ -37,7 +36,7 @@ public class UpsService {
     @Qualifier("threadPoolUps")
     private ThreadPoolTaskExecutor threadPoolUpsExecutor;
 
-    public void OnlineStatusChecker() {
+    public void onlineStatusChecker() {
         try {
             threadPoolUpsExecutor.submit(() -> {
                 int notOnLineCount = 0;
@@ -49,9 +48,10 @@ public class UpsService {
                             return;
                         }
 
-                        Socket socket = new Socket();
-                        socket.connect(new InetSocketAddress(ip, 3389), 3000);
-                        socket.close();
+                        InetAddress address = InetAddress.getByName(ip);
+                        if (!address.isReachable(2000)) {
+                            throw new IOException("ip=" + ip + "不可达");
+                        }
 
                         if (log) {
                             logger.info("检查状态完成ip={}在线,耗时={}", ip, System.currentTimeMillis() - start);

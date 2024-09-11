@@ -16,7 +16,7 @@ public class UpsController {
 
     @GetMapping("/onlineStatusChecker")
     public RestResult<String> onlineStatusChecker() throws Exception {
-        upsService.OnlineStatusChecker();
+        upsService.onlineStatusChecker();
         return new RestResult<String>();
     }
 }
