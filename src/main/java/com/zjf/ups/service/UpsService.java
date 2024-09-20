@@ -2,6 +2,7 @@ package com.zjf.ups.service;
 
 import com.zjf.ups.util.MailUtil;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +16,7 @@ import java.util.concurrent.RejectedExecutionException;
 @Service
 public class UpsService {
 
-    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(UpsService.class);
+    private static final Logger logger = LoggerFactory.getLogger(UpsService.class);
 
     @Value("${ups.ip}")
     private String ip;
@@ -84,6 +85,25 @@ public class UpsService {
         } catch (RejectedExecutionException e) {
             logger.error("ups检查在线状态线程池已满", e);
             return;
+        }
+    }
+
+    public void wake() {
+
+        try {
+            Process process = Runtime.getRuntime().exec("etherwake 54:a0:50:e7:08:95");
+            process.waitFor();
+            int exitCode = process.exitValue();
+            if (exitCode == 0) {
+                logger.info("开机成功");
+                MailUtil.sendEmail("开机成功", "开机成功");
+            } else {
+                logger.info("开机失败,exitCode={}", exitCode);
+                MailUtil.sendEmail("开机失败", "开机失败");
+            }
+        } catch (Exception e) {
+            logger.error("开机失败", e);
+            MailUtil.sendEmail("开机失败", "开机失败");
         }
     }
 }

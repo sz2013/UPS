@@ -19,4 +19,10 @@ public class UpsController {
         upsService.onlineStatusChecker();
         return new RestResult<String>();
     }
+
+    @GetMapping("/wake")
+    public RestResult<String> wake() throws Exception {
+        upsService.wake();
+        return new RestResult<String>();
+    }
 }
